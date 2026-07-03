@@ -1,0 +1,25 @@
+{:description "Polylith monorepo template for agentically-fueled Clojure apps — Integrant bases, secrets + browser components, Claude Code integration"
+ :transform
+ [["build" ""]
+  ;; :raw — ci.yml contains GitHub Actions ${{ }} expressions that mustache
+  ;; substitution would mangle.
+  [".github" ".github" :raw]
+  [".clj-kondo" ".clj-kondo"]
+  ;; settings.json + skills/clojure-eval — substituted ({{top/ns}} in examples).
+  [".claude" ".claude"]
+  ;; :raw — the discuss skill's prompt template uses literal {{brief}} and
+  ;; {{question}} placeholders that must survive generation.
+  ["claude-raw" ".claude" :raw]
+  ["bases" "bases"]
+  ["projects" "projects"]
+  ["development" "development"]
+  ["components/secrets" "components/secrets" {"deps.edn" "deps.edn"
+                                              "README.md" "README.md"} :only]
+  ["components/secrets/src" "components/secrets/src/{{top/file}}/{{main/file}}"]
+  ["components/secrets/test" "components/secrets/test/{{top/file}}/{{main/file}}"]
+  ["components/secrets/resources" "components/secrets/resources"]
+  ["components/browser" "components/browser" {"deps.edn" "deps.edn"
+                                              "README.md" "README.md"} :only]
+  ["components/browser/src" "components/browser/src/{{top/file}}/{{main/file}}"]
+  ["components/browser/test" "components/browser/test/{{top/file}}/{{main/file}}"]
+  ["components/browser/resources" "components/browser/resources"]]}

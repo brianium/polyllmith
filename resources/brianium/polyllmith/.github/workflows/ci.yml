@@ -1,0 +1,110 @@
+name: CI
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened, ready_for_review]
+    branches: [main]
+    paths:
+      - 'components/**'
+      - 'bases/**'
+      - 'projects/**'
+      - 'development/**'
+      - '.clj-kondo/**'
+      - '.github/workflows/**'
+      - 'deps.edn'
+      - 'bb.edn'
+
+# Cancel superseded runs on the same ref — the latest run is what gates merge,
+# so cancelling in-flight predecessors is safe.
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test:
+    name: Lint & Test
+    # Skip draft PRs — CI runs when the PR is marked ready and on subsequent pushes.
+    if: github.event.pull_request.draft == false
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      # "Lint & Test" is intended as a REQUIRED status check, so this job must
+      # always run and report — a path-skipped required check leaves the PR
+      # blocked forever ("waiting for status"). Instead of `paths-ignore` on
+      # the trigger, the job always runs but short-circuits the heavy
+      # lint/test steps when the diff is markdown-only, reporting green in
+      # seconds.
+      - name: Detect non-doc changes
+        id: changes
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+        run: |
+          git fetch --no-tags --depth=1 origin "$BASE_SHA"
+          changed="$(git diff --name-only "$BASE_SHA" HEAD)"
+          echo "Changed files:"
+          echo "$changed"
+          if grep -qvE '(^$|\.md$)' <<< "$changed"; then
+            echo "code=true" >> "$GITHUB_OUTPUT"
+            echo "→ non-doc change detected; running full lint + test"
+          else
+            echo "code=false" >> "$GITHUB_OUTPUT"
+            echo "→ markdown-only diff; skipping lint + test (required check still passes)"
+          fi
+
+      - name: Check for merge conflict markers
+        if: steps.changes.outputs.code == 'true'
+        run: |
+          if git grep -l '^<<<<<<< \|^=======$\|^>>>>>>> ' -- '*.edn' '*.clj' '*.cljs' '*.cljc'; then
+            echo "❌ Unresolved merge conflict markers found in the files above"
+            exit 1
+          fi
+
+      - name: Setup Java
+        if: steps.changes.outputs.code == 'true'
+        uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: '25'
+
+      - name: Setup Clojure
+        if: steps.changes.outputs.code == 'true'
+        uses: DeLaGuardo/setup-clojure@13.6.0
+        with:
+          cli: '1.12.4.1607'
+          bb: '1.12.215'
+          clj-kondo: '2026.01.19'
+
+      - name: Cache dependencies
+        if: steps.changes.outputs.code == 'true'
+        uses: actions/cache@v5
+        with:
+          path: |
+            ~/.m2/repository
+            ~/.gitlibs
+            ~/.deps.clj
+            ~/.clojure
+            .cpcache
+          # Key on every dep-bearing file plus this workflow itself — a pinned
+          # CLI/bb/clj-kondo version bump here must rotate the cache.
+          # `**/deps.edn` covers root + every Polylith brick (incl. :local/root).
+          key: clj-${{ runner.os }}-${{ hashFiles('**/deps.edn', 'bb.edn', '.github/workflows/ci.yml') }}
+          restore-keys: |
+            clj-${{ runner.os }}-
+
+      - name: Download dependencies
+        if: steps.changes.outputs.code == 'true'
+        run: clojure -P && clojure -P -M:dev:test
+
+      - name: Lint
+        if: steps.changes.outputs.code == 'true'
+        run: bb kondo:lint
+
+      - name: Test
+        if: steps.changes.outputs.code == 'true'
+        run: bb test
+
+      - name: Docs-only change — heavy steps skipped
+        if: steps.changes.outputs.code != 'true'
+        run: echo "📄 Markdown-only diff — lint & test skipped; required check passes."

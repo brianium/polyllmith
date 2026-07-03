@@ -1,158 +1,115 @@
 # polyllmith
 
-A clean-slate [Polylith](https://polylith.gitbook.io/polylith) monorepo template for building agentically-fueled Clojure applications — REPL-driven development with an AI pair, Integrant-composed bases, and a browser component for verifying what you build.
+A [deps-new](https://github.com/seancorfield/deps-new) template for scaffolding [Polylith](https://polylith.gitbook.io/polylith) monorepos tuned for **agentic Clojure development** — REPL-driven work with an AI pair (e.g. [Claude Code](https://claude.com/claude-code)), Integrant-composed bases, and a Playwright browser component for verifying what you build.
 
-Polylith organizes code as small, single-purpose **components** exposed through interface namespaces, composed into runnable **bases**, and packaged as deployable **projects**. This repo uses the Polylith *architecture* by convention (no `poly` tool required): the wiring lives in the root `deps.edn` aliases, and the conventions live in [`AGENTS.md`](AGENTS.md).
+## Features
 
-## Components
+- **Polylith architecture by convention** — components/bases/projects wired through root `deps.edn` aliases; no `poly` tool required
+- **`AGENTS.md` conventions** — the full playbook (Integrant patterns, REPL discipline, Polylith dependency model, three-tier test discipline) readable by any coding agent; `CLAUDE.md` is a thin Claude-specific shim that imports it
+- **Two starter components**:
+  - `secrets` — `.env` + system-env credential loading, zero dependencies
+  - `browser` — Playwright-Java Chromium automation (profile-keyed sessions, CDP attach to your real browser, screenshots/a11y snapshots) for verifying running web apps from the REPL
+- **Claude Code integration** via [clojure-mcp-light](https://github.com/bhauman/clojure-mcp-light) — paren/indent auto-repair hooks, a bundled `clojure-eval` nREPL skill, and a `discuss` skill for external second opinions
+- **Hot reloading** via [clj-reload](https://github.com/tonsky/clj-reload) with Integrant suspend/resume
+- **Quality control** — `bb kondo:lint` plus a three-tier test task family (`bb test`, `test:integration`, `test:smoke`, `test:all`, `test:brick`, `test:affected`) and a ready-made GitHub Actions CI workflow
 
-| Component | Description |
-|-----------|-------------|
-| `secrets` | Environment variable management with `.env` file parsing and system env fallback. Zero dependencies. See [`components/secrets/README.md`](components/secrets/README.md). |
-| `browser` | Playwright-Java browser automation — profile-keyed Chromium sessions, CDP attach to your real browser, page perception (HTML, a11y snapshots, screenshots, network log). See [`components/browser/README.md`](components/browser/README.md). |
+## Templates
 
-## Bases
+| Template | Description |
+|----------|-------------|
+| `brianium/polyllmith` | Polylith monorepo for agentically-fueled Clojure apps (JVM) |
 
-Runnable systems composed from components, with Integrant lifecycle.
+## Prerequisites
 
-| Base | Description |
-|------|-------------|
-| _(none yet)_ | |
+### Required
 
-## Projects
+- [Clojure CLI](https://clojure.org/guides/install_clojure) 1.11+
+- [deps-new](https://github.com/seancorfield/deps-new) installed as a tool:
+  ```bash
+  clojure -Ttools install-latest :lib io.github.seancorfield/deps-new :as new
+  ```
 
-Deployment payloads — Dockerfile, docker-compose.yml, scripts, and deployment docs per runtime target.
+### For working in generated projects
 
-| Project | Description |
-|---------|-------------|
-| _(none yet)_ | |
+- [Babashka](https://github.com/babashka/babashka) — task runner (`bb test`, `bb kondo:lint`)
+- [clj-kondo](https://github.com/clj-kondo/clj-kondo) — linting
+- [bbin](https://github.com/babashka/bbin) — to install the clojure-mcp-light CLI tools
+- [Docker](https://www.docker.com/) — optional, for local dev services (Postgres)
 
-## Development
+Each generated project's README carries the full [clojure-mcp-light](https://github.com/bhauman/clojure-mcp-light) install recipe (pinned, with the bbin gotchas documented).
 
-This template is built for **REPL-driven development with an AI pair** — an agent connected to a running nREPL, reloading namespaces and evaluating code as it goes. The root [`AGENTS.md`](AGENTS.md) gives the agent the project's conventions; the tools below give it hands.
+## Usage
 
-### Prerequisites
-
-- **[Clojure CLI](https://clojure.org/guides/install_clojure)** — `brew install clojure/tools/clojure`
-- **[Babashka](https://github.com/babashka/babashka)** — `brew install borkdude/brew/babashka`
-- **[bbin](https://github.com/babashka/bbin)** — `brew install babashka/brew/bbin`
-- **[clj-kondo](https://github.com/clj-kondo/clj-kondo)** — `brew install borkdude/brew/clj-kondo`
-- **[Docker](https://www.docker.com/)** — for Postgres and other dev services (`docker compose up -d`)
-- **[Claude Code](https://claude.com/claude-code)** — or any coding agent that reads `AGENTS.md`
-
-### Install `clojure-mcp-light`
-
-[`clojure-mcp-light`](https://github.com/bhauman/clojure-mcp-light) is a trio of CLI tools that let an LLM talk to a running nREPL and automatically repair delimiter errors in Clojure edits before they hit disk. **These are not MCP servers** — they're plain shell commands the assistant invokes directly.
-
-The commands below pin to **v0.2.2** (commit `cf48cc6`). We pin by explicit
-`--git/tag` + `--git/sha` so installs are reproducible:
+### Create a new workspace
 
 ```bash
-# 1. nREPL eval from the shell (discovery, persistent sessions, auto-repair)
-bbin install https://github.com/bhauman/clojure-mcp-light.git \
-  --git/tag v0.2.2 --git/sha cf48cc6ab1d79809a97a74355492d44ee3bbc4ba \
-  --as clj-nrepl-eval \
-  --main-opts '["-m" "clojure-mcp-light.nrepl-eval"]'
-
-# 2. Claude Code Pre/PostToolUse hook that auto-fixes delimiter errors (zero tokens)
-bbin install https://github.com/bhauman/clojure-mcp-light.git \
-  --git/tag v0.2.2 --git/sha cf48cc6ab1d79809a97a74355492d44ee3bbc4ba \
-  --as clj-paren-repair-claude-hook \
-  --main-opts '["-m" "clojure-mcp-light.hook"]'
-
-# 3. On-demand paren repair (covers Bash-based edits the hook doesn't see)
-bbin install https://github.com/bhauman/clojure-mcp-light.git \
-  --git/tag v0.2.2 --git/sha cf48cc6ab1d79809a97a74355492d44ee3bbc4ba \
-  --as clj-paren-repair \
-  --main-opts '["-m" "clojure-mcp-light.paren-repair"]'
+clojure -Sdeps '{:deps {io.github.brianium/polyllmith {:git/tag "v0.1.0" :git/sha "REPLACE"}}}' \
+  -Tnew create :template brianium/polyllmith :name myorg/myapp
 ```
 
-Verify:
+The `:name` must be qualified (`myorg/myapp`). It becomes the workspace's top namespace: bricks live at `myorg.myapp.<brick>.interface` with source under `components/<brick>/src/myorg/myapp/<brick>/`.
+
+For local testing of the template itself:
 
 ```bash
-bbin ls                          # all three should read "v0.2.2"
-clj-nrepl-eval --help
-clj-paren-repair-claude-hook --help
-clj-paren-repair --help
+clojure -Sdeps '{:deps {io.github.brianium/polyllmith {:local/root "/path/to/polyllmith"}}}' \
+  -Tnew create :template brianium/polyllmith :name myorg/myapp
 ```
 
-> **Two bbin gotchas worth knowing** (they cost real time the first time):
-> - Use the **fully-qualified** `--git/tag` / `--git/sha` flags. bbin 0.2.5 does
->   not recognize the short `--tag` from upstream's README — it silently falls
->   back to `--latest-sha` (installs `main`, not the tag).
-> - Pin `--git/sha` to the **dereferenced commit**, not the tag-object sha.
->   `v0.2.2` is an *annotated* tag, so `git rev-parse v0.2.2` returns the tag
->   object; bbin bakes that string into the script's `script-root` path, but
->   tools.deps checks out the commit — the mismatch makes every invocation fail
->   with a bogus "Cannot run program java" error. Get the right sha with
->   `git rev-parse v0.2.2^{}`.
->
-> To bump later, check the [upstream README](https://github.com/bhauman/clojure-mcp-light)
-> for the newest tag, resolve its commit with `git rev-parse <tag>^{}`, and swap
-> both values above.
+### Generated workspace structure
 
-### Wire up the Claude Code hook
-
-This repo's `.claude/settings.json` already wires the parinfer/cljfmt hook for sessions started here. To get the same behavior in every project, add it to `~/.claude/settings.json` (merge with any existing `hooks` block). Delimiter errors get fixed transparently — no tokens spent, no "paren death loop":
-
-```json
-{
-  "hooks": {
-    "PreToolUse": [
-      { "matcher": "Write|Edit",
-        "hooks": [{ "type": "command", "command": "clj-paren-repair-claude-hook --cljfmt" }] }
-    ],
-    "PostToolUse": [
-      { "matcher": "Edit|Write",
-        "hooks": [{ "type": "command", "command": "clj-paren-repair-claude-hook --cljfmt" }] }
-    ],
-    "SessionEnd": [
-      { "hooks": [{ "type": "command", "command": "clj-paren-repair-claude-hook --cljfmt" }] }
-    ]
-  }
-}
+```
+myapp/
+├── AGENTS.md                     # agent conventions (the big playbook)
+├── CLAUDE.md                     # thin Claude-specific shim (@AGENTS.md)
+├── README.md                     # workspace README with brick inventory tables
+├── deps.edn                      # :dev / :test aliases wiring the bricks
+├── bb.edn                        # kondo:lint + three-tier test tasks
+├── docker-compose.yml            # postgres:18 for local dev services
+├── .env.example                  # secrets skeleton (.env is gitignored)
+├── .github/workflows/ci.yml      # PR CI: lint + Tier 1 tests
+├── .claude/                      # hooks + clojure-eval / discuss skills
+├── components/
+│   ├── secrets/                  # myorg.myapp.secrets.interface
+│   └── browser/                  # myorg.myapp.browser.interface
+├── bases/                        # (empty — your Integrant systems go here)
+├── projects/                     # (empty — deployment payloads go here)
+└── development/
+    └── src/{user.clj, dev.clj, dev/browser.clj}
 ```
 
-### Start a session
+## Development Workflow (in a generated workspace)
 
 ```bash
-# Terminal 1 — dev services (optional; only if your bases need them)
+# Terminal 1 — dev services (optional)
 docker compose up -d
 
 # Terminal 2 — nREPL
-clj -Sdeps '{:deps {nrepl/nrepl {:mvn/version "1.3.0"}}}' -M:dev \
-  -m nrepl.cmdline --port 7888
+clj -Sdeps '{:deps {nrepl/nrepl {:mvn/version "1.3.0"}}}' -M:dev -m nrepl.cmdline --port 7888
 
-# Terminal 3 — your coding agent, from the project root
+# Terminal 3 — your coding agent
 claude
 ```
 
-From here, just ask the agent to do the work. It will:
+In the REPL:
 
-- Discover the running REPL with `clj-nrepl-eval --discover-ports`
-- Drop into the `dev` namespace (`(dev)`) and `(reload)` after edits
-- Evaluate, inspect, and iterate — all without leaving the conversation
-
-> **Always start the REPL from the directory you're working in** (repo root or worktree). The classpath is anchored there — starting from elsewhere breaks `(reload)` and resource lookup. See [`AGENTS.md`](AGENTS.md) for the full REPL workflow and conventions.
-
-### Running tests
-
-The suite splits into three tiers by `^:integration` / `^:smoke` deftest metadata. See [`AGENTS.md`](AGENTS.md#test-discipline--three-tiers) for the full rules; quick reference:
-
-```bash
-bb test                  # Tier 1 (hermetic, no infra) — save-loop default
-bb test:integration      # Tier 2 (local services, subprocesses) — needs infra
-bb test:smoke            # Tier 3 (real external APIs) — needs API keys, costs $
-bb test:all              # Tier 1 + 2 — pre-PR sanity check
-bb test:brick <name>     # one or more bricks (components/, bases/)
-bb test:affected         # Tier 1 tests for bricks changed since main
-
-# Single namespace (any tier, no metadata filter)
-clj -M:test:dev -n polyllmith.secrets.interface-test
+```clojure
+(dev)               ; switch to the dev namespace
+(start config)      ; start an Integrant system
+(reload)            ; reload changed namespaces (suspend/resume hot-swap)
+(browser-launch!)   ; headed Chromium session that survives (reload)
 ```
 
-### Linting
+Run tests:
 
 ```bash
-bb kondo:lint            # clj-kondo over bases/ + components/ (auto-imports configs on first run)
+bb test             # Tier 1 — fast / hermetic
+bb test:affected    # Tier 1 for bricks changed since main
+bb kondo:lint
 ```
+
+## License
+
+Copyright © 2026 Brian Scaturro
+
+Distributed under the Eclipse Public License version 1.0.
