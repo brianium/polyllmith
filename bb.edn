@@ -1,0 +1,144 @@
+{:tasks
+ {kondo:lint
+  {:doc "Lint Clojure files with clj-kondo (auto-imports configs on first run)"
+   :requires ([babashka.fs :as fs]
+              [clojure.string :as str])
+   :task (do
+           (when-not (fs/directory? ".clj-kondo/imports")
+             (fs/create-dirs ".clj-kondo")
+             (shell {:out :string}
+                    "clj-kondo" "--copy-configs" "--dependencies"
+                    "--lint" (-> (shell {:out :string} "clojure" "-Spath" "-M:dev") :out str/trim)))
+           (let [args (if (seq *command-line-args*)
+                        *command-line-args*
+                        ["bases" "components"])]
+             (apply shell "clj-kondo" "--lint" args)))}
+
+  test
+  {:doc "Tier 1 — fast / hermetic. Excludes ^:integration and ^:smoke. Save-loop default; no infra or external creds needed."
+   :task (shell "clojure" "-M:test:dev" "-e" ":integration" "-e" ":smoke")}
+
+  test:integration
+  {:doc "Tier 2 only — ^:integration tests (local services, subprocesses, browsers). Boot the infra first. Excludes smoke."
+   :task (shell "clojure" "-M:test:dev" "-i" ":integration")}
+
+  test:smoke
+  {:doc "Tier 3 only — ^:smoke tests that hit real external APIs. Requires API keys. Costs money. Run manually or on a schedule, not on every PR."
+   :task (shell "clojure" "-M:test:dev" "-i" ":smoke")}
+
+  test:all
+  {:doc "Tier 1 + Tier 2 — everything except ^:smoke. Use as a final pre-PR sanity check."
+   :task (shell "clojure" "-M:test:dev" "-e" ":smoke")}
+
+  test:brick
+  {:doc "Run all tests for one or more bricks (components or bases). Includes ^:integration tests — boot the brick's infra first if needed. Usage: bb test:brick <name> [<name>...]"
+   :requires ([babashka.fs :as fs]
+              [clojure.string :as str])
+   :task (let [names *command-line-args*]
+           (when (empty? names)
+             (binding [*out* *err*]
+               (println "Usage: bb test:brick <name> [<name>...]"))
+             (System/exit 1))
+           (let [roots         ["components" "bases"]
+                 find-test-dir (fn [n]
+                                 (->> roots
+                                      (keep (fn [r]
+                                              (let [td (fs/path r n "test")]
+                                                (when (fs/directory? td) td))))
+                                      first))
+                 ns-of         (fn [td path]
+                                 (-> (str (fs/relativize td path))
+                                     (str/replace (re-pattern "\\.clj$") "")
+                                     (str/replace "/" ".")
+                                     (str/replace "_" "-")))
+                 ns-list       (->> names
+                                    (mapcat (fn [n]
+                                              (if-let [td (find-test-dir n)]
+                                                (map (fn [p] (ns-of td p)) (fs/glob td "**/*_test.clj"))
+                                                (binding [*out* *err*]
+                                                  (println "WARN: brick" n
+                                                           "not found under" (str/join ", " roots)
+                                                           "(or has no test/ dir)")
+                                                  nil))))
+                                    distinct
+                                    sort)]
+             (when (empty? ns-list)
+               (println "No test namespaces found.")
+               (System/exit 0))
+             (println "Running" (count ns-list) "test namespace(s):")
+             (doseq [n ns-list] (println "  " n))
+             (apply shell "clojure" "-M:test:dev" (mapcat (fn [n] ["-n" n]) ns-list))))}
+
+  test:affected
+  {:doc "Run the fast tests for bricks affected by uncommitted changes + commits since main. Doc-only changes skip; root build changes (deps.edn, bb.edn, .github/) escalate to the full fast suite. Override diff base via env: BASE_REF=origin/main bb test:affected. DRY_RUN=1 prints the plan without running tests."
+   :requires ([babashka.fs :as fs]
+              [babashka.process :as proc]
+              [clojure.string :as str])
+   :task (let [base       (or (System/getenv "BASE_REF") "main")
+               dry-run?   (= "1" (System/getenv "DRY_RUN"))
+               capture    (fn [& args]
+                            (let [{:keys [exit out err]} (apply proc/sh args)]
+                              (when (pos? exit)
+                                (binding [*out* *err*]
+                                  (println "WARN:" (str/join " " args) "exited" exit
+                                           (some-> err str/trim))))
+                              (or out "")))
+               ;; Committed-since-base + uncommitted (staged + unstaged) + untracked
+               diff-paths (->> [(capture "git" "diff" "--name-only" (str base "...HEAD"))
+                                (capture "git" "diff" "--name-only" "HEAD")
+                                (capture "git" "ls-files" "--others" "--exclude-standard")]
+                               (mapcat str/split-lines)
+                               (remove str/blank?)
+                               distinct)
+               doc-only?  (fn [p] (or (str/ends-with? p ".md")
+                                      (str/starts-with? p "docs/")
+                                      (str/starts-with? p ".claude/")))
+               root-wide? (fn [p] (or (= p "deps.edn")
+                                      (= p "bb.edn")
+                                      (str/starts-with? p ".github/")))
+               code-paths (remove doc-only? diff-paths)]
+           (when (empty? code-paths)
+             (println "No code changes vs" base "+ working tree. Nothing to test.")
+             (System/exit 0))
+           (when (some root-wide? code-paths)
+             (println "Root build/CI files changed — falling back to full fast suite.")
+             (when dry-run?
+               (println "[DRY_RUN] would: clojure -M:test:dev -e :integration -e :smoke")
+               (System/exit 0))
+             (System/exit (:exit (shell {:continue true}
+                                        "clojure" "-M:test:dev" "-e" ":integration" "-e" ":smoke"))))
+           (let [brick-re   (re-pattern "^(components|bases)/([^/]+)/")
+                 bricks     (->> code-paths
+                                 (keep (fn [p]
+                                         (when-let [m (re-find brick-re p)]
+                                           [(nth m 1) (nth m 2)])))
+                                 distinct)]
+             (when (empty? bricks)
+               (println "Changes outside known brick roots — falling back to full fast suite.")
+               (when dry-run?
+                 (println "[DRY_RUN] would: clojure -M:test:dev -e :integration -e :smoke")
+                 (System/exit 0))
+               (System/exit (:exit (shell {:continue true}
+                                          "clojure" "-M:test:dev" "-e" ":integration" "-e" ":smoke"))))
+             (let [ns-of   (fn [td path]
+                             (-> (str (fs/relativize td path))
+                                 (str/replace (re-pattern "\\.clj$") "")
+                                 (str/replace "/" ".")
+                                 (str/replace "_" "-")))
+                   ns-list (->> bricks
+                                (mapcat (fn [[root n]]
+                                          (let [td (fs/path root n "test")]
+                                            (when (fs/directory? td)
+                                              (map (fn [p] (ns-of td p)) (fs/glob td "**/*_test.clj"))))))
+                                distinct
+                                sort)]
+               (println "Affected bricks:" (str/join ", " (map second bricks)))
+               (when (empty? ns-list)
+                 (println "Affected bricks have no test namespaces. Done.")
+                 (System/exit 0))
+               (println (if dry-run? "[DRY_RUN] would run" "Running")
+                        (count ns-list) "test namespace(s), excluding ^:integration and ^:smoke:")
+               (doseq [n ns-list] (println "  " n))
+               (when dry-run? (System/exit 0))
+               (apply shell "clojure" "-M:test:dev" "-e" ":integration" "-e" ":smoke"
+                      (mapcat (fn [n] ["-n" n]) ns-list)))))}}}
