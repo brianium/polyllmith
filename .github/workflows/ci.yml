@@ -56,7 +56,7 @@ jobs:
         run: |
           cd "$RUNNER_TEMP/genapp"
           # No unsubstituted mustache tags may remain, except the two deliberate
-          # raw payloads: the generated CI workflow (GitHub ${{ }}) and the
+          # raw payloads: the generated CI workflow (GitHub Actions expressions) and the
           # discuss skill (literal {{brief}}/{{question}} placeholders).
           leftovers="$(grep -rn '{{' . --exclude-dir=.git \
             | grep -v '\.github/workflows/ci\.yml:' \
