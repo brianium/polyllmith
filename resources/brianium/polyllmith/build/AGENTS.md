@@ -502,6 +502,40 @@ Bases wire components into Integrant by:
 
 **Components are consumed ONLY through their interface namespaces.** Never require another brick's `core`/`impl` namespaces from outside that brick.
 
+### Interface / core separation (slim interfaces)
+
+A brick's `interface.clj(c|d|s)` is a **contract, not an implementation.** Keep it as slim as
+possible: it requires the brick's implementation namespace(s) and re-exposes the public API —
+thin delegating `defn`s (which carry the public docstrings) and `def` aliases for public data.
+**All real logic lives in `core.clj(c|d|s)`.** The rule of thumb: if you're writing anything
+beyond a one-line delegation in an interface, it belongs in core. The `secrets` component is the
+reference example:
+
+```clojure
+;; interface.clj — slim: docstrings + delegation only
+(ns {{top/ns}}.{{main/ns}}.secrets.interface
+  (:require [{{top/ns}}.{{main/ns}}.secrets.core :as core]))
+
+(defn load-secrets
+  "Public docstring lives here."          ; the interface is the API's doc surface
+  ([]     (core/load-secrets))
+  ([path] (core/load-secrets path)))
+
+;; core.clj — the actual implementation
+(ns {{top/ns}}.{{main/ns}}.secrets.core ...)
+(defn load-secrets ([] ...) ([path] ...))
+```
+
+For a component that exposes **data** rather than behavior, alias the vars:
+`(def config core/config)` — the data itself lives in `core`.
+
+**One `core`, or several domain namespaces.** The default is a single `core`. When a component's
+implementation naturally splits into isolated domains, those **domain namespaces *are* the "core"
+files**, and the interface delegates to each — e.g. a component might keep `parse` and `render`
+implementation namespaces, with its interface re-exposing the public fns from each. The contract
+is unchanged either way — **the interface stays slim and imports the implementation namespace(s),
+and nothing outside the brick requires anything but the interface.**
+
 **When creating a new brick**, add it to root `deps.edn` `:dev` alias:
 ```edn
 :dev {:extra-deps {{{top/ns}}.{{main/ns}}/new-component {:local/root "components/new-component"}
