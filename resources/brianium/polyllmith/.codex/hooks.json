@@ -1,0 +1,36 @@
+{
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Write|Edit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "command -v clj-paren-repair-claude-hook >/dev/null 2>&1 && clj-paren-repair-claude-hook --cljfmt || true"
+          }
+        ]
+      }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": "Edit|Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "command -v clj-paren-repair-claude-hook >/dev/null 2>&1 && clj-paren-repair-claude-hook --cljfmt || true"
+          }
+        ]
+      }
+    ],
+    "SessionEnd": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "command -v clj-paren-repair-claude-hook >/dev/null 2>&1 && clj-paren-repair-claude-hook --cljfmt || true"
+          }
+        ]
+      }
+    ]
+  }
+}

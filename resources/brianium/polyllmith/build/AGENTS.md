@@ -236,6 +236,23 @@ Claude Code also needs to use one of those skills, create a symlink at
 template ships `clojure-eval` that way). Keep Claude-only skills, such as
 `discuss`, as real directories under `.claude/skills/`.
 
+### Agent Hooks
+
+Hooks are configured **natively, per harness** — each harness keeps its own
+self-contained config: `.claude/settings.json` for Claude Code, `.codex/hooks.json`
+for Codex. Both wire the same clojure-mcp-light paren-repair + `cljfmt` command
+into their `PreToolUse` / `PostToolUse` / `SessionEnd` entries. Unlike skills
+(which share a `.agents/skills/` home because Claude only discovers skills under
+`.claude/skills/`), hooks have no such constraint — the command is a one-liner,
+so keeping each config native and complete beats adding an indirection layer.
+Keep the configs in sync when you change the command.
+
+The hook binary (`clj-paren-repair-claude-hook`) reads a **Claude-schema** event
+on stdin (`hook_event_name`, `tool_name`, `tool_input.file_path`, …) to find the
+edited file, so a harness must emit that schema for the hook to act — which is why
+`.codex/hooks.json` mirrors Claude's config shape. `SessionEnd` maps to the hook's
+temp-backup cleanup, so both configs include it.
+
 ### CRITICAL: Always Start a REPL for REPL-Driven Tasks
 
 When a task involves REPL-driven development (component iteration, system testing, UI verification), **always start a REPL if one isn't running**. Never skip REPL interaction by "just editing files directly." The REPL is the primary development tool — use `clj-nrepl-eval --discover-ports` to check, and if none are found, start one with the command below.

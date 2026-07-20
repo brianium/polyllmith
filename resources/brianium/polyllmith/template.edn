@@ -9,8 +9,10 @@
   ;; substitution would mangle.
   [".github" ".github" :raw]
   [".clj-kondo" ".clj-kondo"]
-  ;; settings.json — substituted ({{top/ns}} inside).
+  ;; Native per-harness hook configs — Claude (.claude/settings.json) and
+  ;; Codex (.codex/hooks.json) each carry the same paren-repair + cljfmt command.
   [".claude" ".claude"]
+  [".codex" ".codex"]
   ;; Harness-agnostic shared skills live in .agents/skills/; Claude discovers
   ;; clojure-eval via a symlink created by :post-process-fn. Substituted
   ;; ({{top/ns}} in the skill examples).
