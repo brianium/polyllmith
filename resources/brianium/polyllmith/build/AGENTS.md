@@ -227,6 +227,32 @@ bb kondo:lint       # Lint with clj-kondo
 
 ## Development Setup
 
+### Agent Skills
+
+Shared, agent-authored skills belong under `.agents/skills/<skill-name>/` — a
+harness-agnostic location any coding agent can read from `AGENTS.md`. When
+Claude Code also needs to use one of those skills, create a symlink at
+`.claude/skills/<skill-name>` pointing to the shared skill directory (this
+template ships `clojure-eval` that way). Keep Claude-only skills, such as
+`discuss`, as real directories under `.claude/skills/`.
+
+### Agent Hooks
+
+Hooks are configured **natively, per harness** — each harness keeps its own
+self-contained config: `.claude/settings.json` for Claude Code, `.codex/hooks.json`
+for Codex. Both wire the same clojure-mcp-light paren-repair + `cljfmt` command
+into their `PreToolUse` / `PostToolUse` / `SessionEnd` entries. Unlike skills
+(which share a `.agents/skills/` home because Claude only discovers skills under
+`.claude/skills/`), hooks have no such constraint — the command is a one-liner,
+so keeping each config native and complete beats adding an indirection layer.
+Keep the configs in sync when you change the command.
+
+The hook binary (`clj-paren-repair-claude-hook`) reads a **Claude-schema** event
+on stdin (`hook_event_name`, `tool_name`, `tool_input.file_path`, …) to find the
+edited file, so a harness must emit that schema for the hook to act — which is why
+`.codex/hooks.json` mirrors Claude's config shape. `SessionEnd` maps to the hook's
+temp-backup cleanup, so both configs include it.
+
 ### CRITICAL: Always Start a REPL for REPL-Driven Tasks
 
 When a task involves REPL-driven development (component iteration, system testing, UI verification), **always start a REPL if one isn't running**. Never skip REPL interaction by "just editing files directly." The REPL is the primary development tool — use `clj-nrepl-eval --discover-ports` to check, and if none are found, start one with the command below.
@@ -300,7 +326,9 @@ projects/    # Polylith projects (deployment payloads)
 
 ## REPL Evaluation
 
-Evaluate code in the running REPL via nREPL using `clj-nrepl-eval`.
+Use the shared `clojure-eval` skill (`.agents/skills/clojure-eval/`) for all
+nREPL interaction. It wraps `clj-nrepl-eval` with the project's discovery,
+working-directory, `dev` namespace, and shell-escaping rules.
 
 ### Connecting and Evaluating
 
@@ -501,6 +529,40 @@ Bases wire components into Integrant by:
 3. Bases simply `require` component interfaces — no explicit dependency declaration
 
 **Components are consumed ONLY through their interface namespaces.** Never require another brick's `core`/`impl` namespaces from outside that brick.
+
+### Interface / core separation (slim interfaces)
+
+A brick's `interface.clj(c|d|s)` is a **contract, not an implementation.** Keep it as slim as
+possible: it requires the brick's implementation namespace(s) and re-exposes the public API —
+thin delegating `defn`s (which carry the public docstrings) and `def` aliases for public data.
+**All real logic lives in `core.clj(c|d|s)`.** The rule of thumb: if you're writing anything
+beyond a one-line delegation in an interface, it belongs in core. The `secrets` component is the
+reference example:
+
+```clojure
+;; interface.clj — slim: docstrings + delegation only
+(ns {{top/ns}}.{{main/ns}}.secrets.interface
+  (:require [{{top/ns}}.{{main/ns}}.secrets.core :as core]))
+
+(defn load-secrets
+  "Public docstring lives here."          ; the interface is the API's doc surface
+  ([]     (core/load-secrets))
+  ([path] (core/load-secrets path)))
+
+;; core.clj — the actual implementation
+(ns {{top/ns}}.{{main/ns}}.secrets.core ...)
+(defn load-secrets ([] ...) ([path] ...))
+```
+
+For a component that exposes **data** rather than behavior, alias the vars:
+`(def config core/config)` — the data itself lives in `core`.
+
+**One `core`, or several domain namespaces.** The default is a single `core`. When a component's
+implementation naturally splits into isolated domains, those **domain namespaces *are* the "core"
+files**, and the interface delegates to each — e.g. a component might keep `parse` and `render`
+implementation namespaces, with its interface re-exposing the public fns from each. The contract
+is unchanged either way — **the interface stays slim and imports the implementation namespace(s),
+and nothing outside the brick requires anything but the interface.**
 
 **When creating a new brick**, add it to root `deps.edn` `:dev` alias:
 ```edn

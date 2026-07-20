@@ -52,7 +52,7 @@ clj-nrepl-eval -p <PORT> "(+ 1 2 3)"
 
 ### 3. Work in the `dev` namespace
 
-Per the project `CLAUDE.md`, all REPL work happens in `dev`. Require with
+Per the project `AGENTS.md`, all REPL work happens in `dev`. Require with
 `:reload` to pick up file changes:
 
 ```bash
