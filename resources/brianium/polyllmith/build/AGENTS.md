@@ -227,6 +227,15 @@ bb kondo:lint       # Lint with clj-kondo
 
 ## Development Setup
 
+### Agent Skills
+
+Shared, agent-authored skills belong under `.agents/skills/<skill-name>/` — a
+harness-agnostic location any coding agent can read from `AGENTS.md`. When
+Claude Code also needs to use one of those skills, create a symlink at
+`.claude/skills/<skill-name>` pointing to the shared skill directory (this
+template ships `clojure-eval` that way). Keep Claude-only skills, such as
+`discuss`, as real directories under `.claude/skills/`.
+
 ### CRITICAL: Always Start a REPL for REPL-Driven Tasks
 
 When a task involves REPL-driven development (component iteration, system testing, UI verification), **always start a REPL if one isn't running**. Never skip REPL interaction by "just editing files directly." The REPL is the primary development tool — use `clj-nrepl-eval --discover-ports` to check, and if none are found, start one with the command below.
@@ -300,7 +309,9 @@ projects/    # Polylith projects (deployment payloads)
 
 ## REPL Evaluation
 
-Evaluate code in the running REPL via nREPL using `clj-nrepl-eval`.
+Use the shared `clojure-eval` skill (`.agents/skills/clojure-eval/`) for all
+nREPL interaction. It wraps `clj-nrepl-eval` with the project's discovery,
+working-directory, `dev` namespace, and shell-escaping rules.
 
 ### Connecting and Evaluating
 

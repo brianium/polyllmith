@@ -9,7 +9,8 @@ A [deps-new](https://github.com/seancorfield/deps-new) template for scaffolding 
 - **Two starter components**:
   - `secrets` — `.env` + system-env credential loading, zero dependencies
   - `browser` — Playwright-Java Chromium automation (profile-keyed sessions, CDP attach to your real browser, screenshots/a11y snapshots) for verifying running web apps from the REPL
-- **Claude Code integration** via [clojure-mcp-light](https://github.com/bhauman/clojure-mcp-light) — paren/indent auto-repair hooks, a bundled `clojure-eval` nREPL skill, and a `discuss` skill for external second opinions
+- **Harness-agnostic skills** — shared, agent-authored skills live in `.agents/skills/` (readable by any coding agent from `AGENTS.md`); Claude Code discovers them through symlinks under `.claude/skills/`. The bundled `clojure-eval` nREPL skill is set up this way.
+- **Claude Code integration** via [clojure-mcp-light](https://github.com/bhauman/clojure-mcp-light) — paren/indent auto-repair hooks, the shared `clojure-eval` nREPL skill, and a Claude-only `discuss` skill for external second opinions
 - **Hot reloading** via [clj-reload](https://github.com/tonsky/clj-reload) with Integrant suspend/resume
 - **Quality control** — `bb kondo:lint` plus a three-tier test task family (`bb test`, `test:integration`, `test:smoke`, `test:all`, `test:brick`, `test:affected`) and a ready-made GitHub Actions CI workflow
 
@@ -68,7 +69,8 @@ myapp/
 ├── docker-compose.yml            # postgres:18 for local dev services
 ├── .env.example                  # secrets skeleton (.env is gitignored)
 ├── .github/workflows/ci.yml      # PR CI: lint + Tier 1 tests
-├── .claude/                      # hooks + clojure-eval / discuss skills
+├── .agents/skills/               # harness-agnostic shared skills (clojure-eval)
+├── .claude/                      # hooks, discuss skill, clojure-eval symlink → .agents/
 ├── components/
 │   ├── secrets/                  # myorg.myapp.secrets.interface
 │   └── browser/                  # myorg.myapp.browser.interface
