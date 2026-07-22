@@ -44,7 +44,7 @@ Each generated project's README carries the full [clojure-mcp-light](https://git
 ### Create a new workspace
 
 ```bash
-clojure -Sdeps '{:deps {io.github.brianium/polyllmith {:git/tag "v0.2.0" :git/sha "8f677d9"}}}' \
+clojure -Sdeps '{:deps {io.github.brianium/polyllmith {:git/tag "v0.2.1" :git/sha "a27da39"}}}' \
   -Tnew create :template brianium/polyllmith :name myorg/myapp
 ```
 
