@@ -40,6 +40,8 @@ This workspace is built for **REPL-driven development with an AI pair** — an a
 - **[Docker](https://www.docker.com/)** — for Postgres and other dev services (`docker compose up -d`)
 - **[Claude Code](https://claude.com/claude-code)** — or any coding agent that reads `AGENTS.md`
 
+> **Emacs/CIDER users:** `.dir-locals.el` at the root pins CIDER to the JVM Clojure CLI (the root `bb.edn` otherwise makes it auto-detect babashka) and always includes the `:dev` alias, so `cider-jack-in` puts every Polylith brick on the classpath.
+
 ### Install `clojure-mcp-light`
 
 [`clojure-mcp-light`](https://github.com/bhauman/clojure-mcp-light) is a trio of CLI tools that let an LLM talk to a running nREPL and automatically repair delimiter errors in Clojure edits before they hit disk. **These are not MCP servers** — they're plain shell commands the assistant invokes directly.
