@@ -7,8 +7,6 @@ This project uses the [Polylith](https://polylith.gitbook.io/polylith) software 
 
 When adding a new base or component, update the tables in `README.md` to keep the inventory current.
 
-`AGENTS.md` is the single source of project instructions for every coding agent, Claude Code included (v2.1.277+ reads `AGENTS.md` when no `CLAUDE.md` exists). **Don't create a `CLAUDE.md`, `.claude/CLAUDE.md`, or `CLAUDE.local.md`** (e.g. via `/init`) — any of them in this directory or above makes Claude Code stop reading `AGENTS.md`. Put new instructions here; subdirectory notes go in that directory's own `AGENTS.md` (see `development/AGENTS.md`).
-
 ## Technology Stack
 
 - **Clojure** with deps.edn
@@ -235,11 +233,8 @@ Shared, agent-authored skills belong under `.agents/skills/<skill-name>/` — a
 harness-agnostic location any coding agent can read from `AGENTS.md`. When
 Claude Code also needs to use one of those skills, create a symlink at
 `.claude/skills/<skill-name>` pointing to the shared skill directory (this
-template ships `clojure-eval` that way). Keep Claude-only skills, such as
-`discuss`, as real directories under `.claude/skills/`.
-
-The `/discuss` skill (Claude Code only) runs the current line of thinking past an
-external adversary model — use it to pressure-test a design before it becomes a diff.
+template ships `clojure-eval` that way). Keep Claude-only skills as real
+directories under `.claude/skills/`.
 
 ### Agent Hooks
 
