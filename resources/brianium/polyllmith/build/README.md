@@ -38,7 +38,9 @@ This workspace is built for **REPL-driven development with an AI pair** — an a
 - **[bbin](https://github.com/babashka/bbin)** — `brew install babashka/brew/bbin`
 - **[clj-kondo](https://github.com/clj-kondo/clj-kondo)** — `brew install borkdude/brew/clj-kondo`
 - **[Docker](https://www.docker.com/)** — for Postgres and other dev services (`docker compose up -d`)
-- **[Claude Code](https://claude.com/claude-code)** — or any coding agent that reads `AGENTS.md`
+- **[Claude Code](https://claude.com/claude-code)** v2.1.277+ — or any coding agent that reads `AGENTS.md`
+
+> **Claude Code and `AGENTS.md`:** there is deliberately no `CLAUDE.md` — Claude Code reads `AGENTS.md` directly when none exists. Adding a `CLAUDE.md` or `CLAUDE.local.md` turns that off. If you're on an older Claude Code, or a session that can't read `AGENTS.md` (e.g. Amazon Bedrock, Vertex, Foundry), create a one-line `CLAUDE.md` containing `@AGENTS.md` to import it instead.
 
 > **Emacs/CIDER users:** `.dir-locals.el` at the root pins CIDER to the JVM Clojure CLI (the root `bb.edn` otherwise makes it auto-detect babashka) and always includes the `:dev` alias, so `cider-jack-in` puts every Polylith brick on the classpath.
 

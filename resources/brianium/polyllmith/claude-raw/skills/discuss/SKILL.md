@@ -48,7 +48,7 @@ This is the load-bearing step. The adversary has **zero conversation history**. 
 - **The problem** — what we're actually trying to solve, in a few sentences.
 - **The approach being leaned toward** — what the user (and you) are currently inclined to do.
 - **The alternative(s) in view** — the road(s) not taken. If the conversation has only surfaced one approach, name the most plausible alternative yourself so the adversary has something to steelman.
-- **Hard constraints** — the load-bearing context the adversary can't infer: relevant Polylith bricks, architectural rules (Integrant-in-bases-only, interface-only consumption, mobile-first CSS), prior decisions that are fixed, anything from CLAUDE.md or memory that bounds the design.
+- **Hard constraints** — the load-bearing context the adversary can't infer: relevant Polylith bricks, architectural rules (Integrant-in-bases-only, interface-only consumption, mobile-first CSS), prior decisions that are fixed, anything from AGENTS.md or memory that bounds the design.
 - **Tight, named file excerpts** — only when a claim is load-bearing. Reference paths the adversary can read itself rather than pasting whole files.
 
 Two disciplines that protect the consult's value:

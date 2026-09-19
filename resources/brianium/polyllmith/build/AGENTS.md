@@ -7,6 +7,8 @@ This project uses the [Polylith](https://polylith.gitbook.io/polylith) software 
 
 When adding a new base or component, update the tables in `README.md` to keep the inventory current.
 
+`AGENTS.md` is the single source of project instructions for every coding agent, Claude Code included (v2.1.277+ reads `AGENTS.md` when no `CLAUDE.md` exists). **Don't create a `CLAUDE.md`, `.claude/CLAUDE.md`, or `CLAUDE.local.md`** (e.g. via `/init`) — any of them in this directory or above makes Claude Code stop reading `AGENTS.md`. Put new instructions here; subdirectory notes go in that directory's own `AGENTS.md` (see `development/AGENTS.md`).
+
 ## Technology Stack
 
 - **Clojure** with deps.edn
@@ -236,6 +238,9 @@ Claude Code also needs to use one of those skills, create a symlink at
 template ships `clojure-eval` that way). Keep Claude-only skills, such as
 `discuss`, as real directories under `.claude/skills/`.
 
+The `/discuss` skill (Claude Code only) runs the current line of thinking past an
+external adversary model — use it to pressure-test a design before it becomes a diff.
+
 ### Agent Hooks
 
 Hooks are configured **natively, per harness** — each harness keeps its own
@@ -245,7 +250,8 @@ into their `PreToolUse` / `PostToolUse` / `SessionEnd` entries. Unlike skills
 (which share a `.agents/skills/` home because Claude only discovers skills under
 `.claude/skills/`), hooks have no such constraint — the command is a one-liner,
 so keeping each config native and complete beats adding an indirection layer.
-Keep the configs in sync when you change the command.
+Keep the configs in sync when you change the command. Because the hooks format
+every edit, don't hand-format Clojure — just write the code.
 
 The hook binary (`clj-paren-repair-claude-hook`) reads a **Claude-schema** event
 on stdin (`hook_event_name`, `tool_name`, `tool_input.file_path`, …) to find the
@@ -298,7 +304,7 @@ Example with a base:
 (restart my-base/config)
 ```
 
-See `development/CLAUDE.md` for the reload-vs-restart doctrine (including the `(require ... :reload)` trap).
+See `development/AGENTS.md` for the reload-vs-restart doctrine (including the `(require ... :reload)` trap).
 
 ### Browser Verification
 

@@ -5,7 +5,7 @@ A [deps-new](https://github.com/seancorfield/deps-new) template for scaffolding 
 ## Features
 
 - **Polylith architecture by convention** — components/bases/projects wired through root `deps.edn` aliases; no `poly` tool required
-- **`AGENTS.md` conventions** — the full playbook (Integrant patterns, REPL discipline, Polylith dependency model, three-tier test discipline) readable by any coding agent; `CLAUDE.md` is a thin Claude-specific shim that imports it
+- **`AGENTS.md` conventions** — the full playbook (Integrant patterns, REPL discipline, Polylith dependency model, three-tier test discipline) readable by any coding agent, Claude Code included (v2.1.277+ reads `AGENTS.md` natively, so no `CLAUDE.md` is generated)
 - **Two starter components**:
   - `secrets` — `.env` + system-env credential loading, zero dependencies
   - `browser` — Playwright-Java Chromium automation (profile-keyed sessions, CDP attach to your real browser, screenshots/a11y snapshots) for verifying running web apps from the REPL
@@ -61,8 +61,7 @@ clojure -Sdeps '{:deps {io.github.brianium/polyllmith {:local/root "/path/to/pol
 
 ```
 myapp/
-├── AGENTS.md                     # agent conventions (the big playbook)
-├── CLAUDE.md                     # thin Claude-specific shim (@AGENTS.md)
+├── AGENTS.md                     # agent conventions (the big playbook) — read by Claude Code too
 ├── README.md                     # workspace README with brick inventory tables
 ├── deps.edn                      # :dev / :test aliases wiring the bricks
 ├── bb.edn                        # kondo:lint + three-tier test tasks
