@@ -17,9 +17,6 @@
   ;; clojure-eval via a symlink created by :post-process-fn. Substituted
   ;; ({{top/ns}} in the skill examples).
   ["agents" ".agents"]
-  ;; :raw — the discuss skill's prompt template uses literal {{brief}} and
-  ;; {{question}} placeholders that must survive generation.
-  ["claude-raw" ".claude" :raw]
   ["bases" "bases"]
   ["projects" "projects"]
   ["development" "development"]

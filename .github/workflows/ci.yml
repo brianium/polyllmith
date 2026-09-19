@@ -55,12 +55,10 @@ jobs:
       - name: Check substitution completeness
         run: |
           cd "$RUNNER_TEMP/genapp"
-          # No unsubstituted mustache tags may remain, except the two deliberate
-          # raw payloads: the generated CI workflow (GitHub Actions expressions) and the
-          # discuss skill (literal {{brief}}/{{question}} placeholders).
+          # No unsubstituted mustache tags may remain, except the deliberate raw
+          # payload: the generated CI workflow (GitHub Actions expressions).
           leftovers="$(grep -rn '{{' . --exclude-dir=.git \
-            | grep -v '\.github/workflows/ci\.yml:' \
-            | grep -v '\.claude/skills/discuss/' || true)"
+            | grep -v '\.github/workflows/ci\.yml:' || true)"
           if [ -n "$leftovers" ]; then
             echo "❌ Unsubstituted template tags found:"
             echo "$leftovers"

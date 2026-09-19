@@ -233,8 +233,8 @@ Shared, agent-authored skills belong under `.agents/skills/<skill-name>/` — a
 harness-agnostic location any coding agent can read from `AGENTS.md`. When
 Claude Code also needs to use one of those skills, create a symlink at
 `.claude/skills/<skill-name>` pointing to the shared skill directory (this
-template ships `clojure-eval` that way). Keep Claude-only skills, such as
-`discuss`, as real directories under `.claude/skills/`.
+template ships `clojure-eval` that way). Keep Claude-only skills as real
+directories under `.claude/skills/`.
 
 ### Agent Hooks
 
@@ -245,7 +245,8 @@ into their `PreToolUse` / `PostToolUse` / `SessionEnd` entries. Unlike skills
 (which share a `.agents/skills/` home because Claude only discovers skills under
 `.claude/skills/`), hooks have no such constraint — the command is a one-liner,
 so keeping each config native and complete beats adding an indirection layer.
-Keep the configs in sync when you change the command.
+Keep the configs in sync when you change the command. Because the hooks format
+every edit, don't hand-format Clojure — just write the code.
 
 The hook binary (`clj-paren-repair-claude-hook`) reads a **Claude-schema** event
 on stdin (`hook_event_name`, `tool_name`, `tool_input.file_path`, …) to find the
@@ -298,7 +299,7 @@ Example with a base:
 (restart my-base/config)
 ```
 
-See `development/CLAUDE.md` for the reload-vs-restart doctrine (including the `(require ... :reload)` trap).
+See `development/AGENTS.md` for the reload-vs-restart doctrine (including the `(require ... :reload)` trap).
 
 ### Browser Verification
 

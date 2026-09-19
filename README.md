@@ -5,12 +5,12 @@ A [deps-new](https://github.com/seancorfield/deps-new) template for scaffolding 
 ## Features
 
 - **Polylith architecture by convention** — components/bases/projects wired through root `deps.edn` aliases; no `poly` tool required
-- **`AGENTS.md` conventions** — the full playbook (Integrant patterns, REPL discipline, Polylith dependency model, three-tier test discipline) readable by any coding agent; `CLAUDE.md` is a thin Claude-specific shim that imports it
+- **`AGENTS.md` conventions** — the full playbook (Integrant patterns, REPL discipline, Polylith dependency model, three-tier test discipline) readable by any coding agent, Claude Code included (v2.1.277+ reads `AGENTS.md` natively, so no `CLAUDE.md` is generated)
 - **Two starter components**:
   - `secrets` — `.env` + system-env credential loading, zero dependencies
   - `browser` — Playwright-Java Chromium automation (profile-keyed sessions, CDP attach to your real browser, screenshots/a11y snapshots) for verifying running web apps from the REPL
 - **Harness-agnostic skills** — shared, agent-authored skills live in `.agents/skills/` (readable by any coding agent from `AGENTS.md`); Claude Code discovers them through symlinks under `.claude/skills/`. The bundled `clojure-eval` nREPL skill is set up this way.
-- **Claude Code integration** via [clojure-mcp-light](https://github.com/bhauman/clojure-mcp-light) — paren/indent auto-repair hooks (wired natively for both Claude via `.claude/settings.json` and Codex via `.codex/hooks.json`), the shared `clojure-eval` nREPL skill, and a Claude-only `discuss` skill for external second opinions
+- **Claude Code integration** via [clojure-mcp-light](https://github.com/bhauman/clojure-mcp-light) — paren/indent auto-repair hooks (wired natively for both Claude via `.claude/settings.json` and Codex via `.codex/hooks.json`), and the shared `clojure-eval` nREPL skill
 - **Hot reloading** via [clj-reload](https://github.com/tonsky/clj-reload) with Integrant suspend/resume
 - **Quality control** — `bb kondo:lint` plus a three-tier test task family (`bb test`, `test:integration`, `test:smoke`, `test:all`, `test:brick`, `test:affected`) and a ready-made GitHub Actions CI workflow
 
@@ -61,8 +61,7 @@ clojure -Sdeps '{:deps {io.github.brianium/polyllmith {:local/root "/path/to/pol
 
 ```
 myapp/
-├── AGENTS.md                     # agent conventions (the big playbook)
-├── CLAUDE.md                     # thin Claude-specific shim (@AGENTS.md)
+├── AGENTS.md                     # agent conventions (the big playbook) — read by Claude Code too
 ├── README.md                     # workspace README with brick inventory tables
 ├── deps.edn                      # :dev / :test aliases wiring the bricks
 ├── bb.edn                        # kondo:lint + three-tier test tasks
@@ -70,7 +69,7 @@ myapp/
 ├── .env.example                  # secrets skeleton (.env is gitignored)
 ├── .github/workflows/ci.yml      # PR CI: lint + Tier 1 tests
 ├── .agents/skills/               # harness-agnostic shared skills (clojure-eval)
-├── .claude/                      # Claude hooks (settings.json), discuss skill, clojure-eval symlink → .agents/
+├── .claude/                      # Claude hooks (settings.json), clojure-eval symlink → .agents/
 ├── .codex/                       # Codex hooks (hooks.json) — same paren-repair + cljfmt hook
 ├── components/
 │   ├── secrets/                  # myorg.myapp.secrets.interface
